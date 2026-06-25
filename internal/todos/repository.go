@@ -3,7 +3,7 @@ package todos
 import (
 	"context"
 	"errors"
-	"fmt"
+	"todo-app/internal/errorCodes"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,23 +17,23 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) Create(ctx context.Context, todo *Todo) (int, error) {
+func (r *Repository) Create(ctx context.Context, todo *Todo) (*Todo, error) {
 	query := `
 		INSERT INTO todos (title, description, completed, createdAt, updatedAt, userId)
 		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id
+		RETURNING *
 	`
-	var insertedTodoId int
+	var insertedTodo Todo
 
-	err := r.db.QueryRow(ctx, query, todo.Title, todo.Description, todo.Completed, todo.CreatedAt, todo.UpdatedAt, todo.UserId).Scan(&insertedTodoId)
+	err := r.db.QueryRow(ctx, query, todo.Title, todo.Description, todo.Completed, todo.CreatedAt, todo.UpdatedAt, todo.UserId).Scan(&insertedTodo.Id, &insertedTodo.Title, &insertedTodo.Description, &insertedTodo.Completed, &insertedTodo.CreatedAt, &insertedTodo.UpdatedAt, &insertedTodo.UserId)
 
 	if err != nil {
-		return 0, err
+		return nil, errors.New(errorCodes.INTERNAL)
 	}
-	return insertedTodoId, nil
+	return &insertedTodo, nil
 }
 
-func (r *Repository) GetById(ctx context.Context, id int) (Todo, error) {
+func (r *Repository) GetById(ctx context.Context, id int) (*Todo, error) {
 	query := `
 		SELECT
 			id,
@@ -54,12 +54,12 @@ func (r *Repository) GetById(ctx context.Context, id int) (Todo, error) {
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return Todo{}, errors.New("Todo not found")
+			return nil, errors.New(errorCodes.NOT_FOUND)
 		}
-		return Todo{}, fmt.Errorf("%w", err)
+		return nil, errors.New(errorCodes.INTERNAL)
 	}
 
-	return todo, nil
+	return &todo, nil
 }
 
 func (r *Repository) GetAll(ctx context.Context, userId int) ([]Todo, error) {
@@ -79,7 +79,7 @@ func (r *Repository) GetAll(ctx context.Context, userId int) ([]Todo, error) {
 
 	rows, err := r.db.Query(ctx, query, userId)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, errors.New(errorCodes.INTERNAL)
 	}
 	defer rows.Close()
 
@@ -87,11 +87,11 @@ func (r *Repository) GetAll(ctx context.Context, userId int) ([]Todo, error) {
 		var todo Todo
 
 		err = row.Scan(&todo.Id, &todo.Title, &todo.Description, &todo.Completed, &todo.CreatedAt, &todo.UpdatedAt, &todo.UserId)
-		return todo, err
+		return todo, errors.New(errorCodes.INTERNAL)
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, errors.New(errorCodes.INTERNAL)
 	}
 	return todos, nil
 }
@@ -105,11 +105,11 @@ func (r *Repository) Delete(ctx context.Context, todoId int) error {
 	result, err := r.db.Exec(ctx, query, todoId)
 
 	if err != nil {
-		return err
+		return errors.New(errorCodes.INTERNAL)
 	}
 
 	if result.RowsAffected() == 0 {
-		return errors.New("Todo not found")
+		return errors.New(errorCodes.NOT_FOUND)
 	}
 	return nil
 }
