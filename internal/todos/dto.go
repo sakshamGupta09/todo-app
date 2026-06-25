@@ -5,6 +5,7 @@ import "time"
 type CreateTodoRequest struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	UserId      int    `json:"userId"`
 }
 
 type TodoResponse struct {

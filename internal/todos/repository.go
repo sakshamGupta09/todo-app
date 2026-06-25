@@ -9,6 +9,16 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type PaginatedResult struct {
+	TotalRecords int
+	Content      any
+}
+
+type PaginationParams struct {
+	PageSize   int
+	PageNumber int
+}
+
 type Repository struct {
 	db *pgxpool.Pool
 }
@@ -62,8 +72,25 @@ func (r *Repository) GetById(ctx context.Context, id int) (*Todo, error) {
 	return &todo, nil
 }
 
-func (r *Repository) GetAll(ctx context.Context, userId int) ([]Todo, error) {
+func (r *Repository) GetAll(ctx context.Context, userId int, params PaginationParams) (*PaginatedResult, error) {
 	query := `
+		SELECT
+			COUNT(id)
+		FROM todos
+		WHERE
+			user_id = $1
+	`
+	paginatedResult := &PaginatedResult{
+		TotalRecords: 0,
+		Content:      make([]Todo, 0),
+	}
+	err := r.db.QueryRow(ctx, query, userId).Scan(&paginatedResult.TotalRecords)
+	if err != nil {
+		return nil, errors.New(errorCodes.INTERNAL)
+	}
+
+	offset := (params.PageNumber - 1) * params.PageSize
+	query = `
 	SELECT
 		id,
 		title,
@@ -75,9 +102,10 @@ func (r *Repository) GetAll(ctx context.Context, userId int) ([]Todo, error) {
 	FROM todos
 	WHERE
 		userId = $1
+	OFFSET $2
+	LIMIT $3
 `
-
-	rows, err := r.db.Query(ctx, query, userId)
+	rows, err := r.db.Query(ctx, query, userId, offset, params.PageSize)
 	if err != nil {
 		return nil, errors.New(errorCodes.INTERNAL)
 	}
@@ -87,13 +115,14 @@ func (r *Repository) GetAll(ctx context.Context, userId int) ([]Todo, error) {
 		var todo Todo
 
 		err = row.Scan(&todo.Id, &todo.Title, &todo.Description, &todo.Completed, &todo.CreatedAt, &todo.UpdatedAt, &todo.UserId)
-		return todo, errors.New(errorCodes.INTERNAL)
+		return todo, err
 	})
 
 	if err != nil {
 		return nil, errors.New(errorCodes.INTERNAL)
 	}
-	return todos, nil
+	paginatedResult.Content = todos
+	return paginatedResult, nil
 }
 
 func (r *Repository) Delete(ctx context.Context, todoId int) error {
