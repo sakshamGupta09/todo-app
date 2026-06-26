@@ -7,8 +7,10 @@ import (
 	"os"
 	"time"
 
+	"todo-app/internal/app"
 	"todo-app/internal/database"
 
+	"github.com/gorilla/schema"
 	"github.com/joho/godotenv"
 )
 
@@ -28,5 +30,13 @@ func main() {
 		log.Fatal("Could not connect to the database", err)
 	}
 	fmt.Println("Connected to DB ....", db)
+
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+
+	application := &app.App{
+		DB:      db,
+		Decoder: decoder,
+	}
 
 }

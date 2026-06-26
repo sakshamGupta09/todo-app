@@ -3,15 +3,17 @@ package todos
 import (
 	"encoding/json"
 	"net/http"
+	"todo-app/internal/app"
 	"todo-app/internal/utils"
 )
 
 type Handler struct {
 	service *Service
+	app     *app.App
 }
 
-func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service *Service, app *app.App) *Handler {
+	return &Handler{service: service, app: app}
 }
 
 func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
@@ -28,5 +30,4 @@ func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, res)
-
 }
