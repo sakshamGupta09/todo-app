@@ -3,8 +3,9 @@ package todos
 import (
 	"context"
 	"errors"
-	"todo-app/internal/errorCodes"
+	"net/http"
 	"todo-app/internal/models"
+	"todo-app/internal/utils"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -18,7 +19,7 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) Create(ctx context.Context, todo *Todo) (*Todo, error) {
+func (r *Repository) Create(ctx context.Context, todo *Todo) (*Todo, *models.AppError) {
 	query := `
 		INSERT INTO todos (title, description, completed, createdAt, updatedAt, userId)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -29,12 +30,12 @@ func (r *Repository) Create(ctx context.Context, todo *Todo) (*Todo, error) {
 	err := r.db.QueryRow(ctx, query, todo.Title, todo.Description, todo.Completed, todo.CreatedAt, todo.UpdatedAt, todo.UserId).Scan(&insertedTodo.Id, &insertedTodo.Title, &insertedTodo.Description, &insertedTodo.Completed, &insertedTodo.CreatedAt, &insertedTodo.UpdatedAt, &insertedTodo.UserId)
 
 	if err != nil {
-		return nil, errors.New(errorCodes.INTERNAL)
+		return nil, utils.CreateError(http.StatusInternalServerError, INTERNAL_ERROR, err.Error())
 	}
 	return &insertedTodo, nil
 }
 
-func (r *Repository) GetById(ctx context.Context, id int) (*Todo, error) {
+func (r *Repository) GetById(ctx context.Context, id int) (*Todo, *models.AppError) {
 	query := `
 		SELECT
 			id,
@@ -55,15 +56,15 @@ func (r *Repository) GetById(ctx context.Context, id int) (*Todo, error) {
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, errors.New(errorCodes.NOT_FOUND)
+			return nil, utils.CreateError(http.StatusNotFound, NOT_FOUND, err.Error())
 		}
-		return nil, errors.New(errorCodes.INTERNAL)
+		return nil, utils.CreateError(http.StatusInternalServerError, INTERNAL_ERROR, err.Error())
 	}
 
 	return &todo, nil
 }
 
-func (r *Repository) GetAll(ctx context.Context, userId int, params GetTodosRequest) (*models.PaginatedResponse[Todo], error) {
+func (r *Repository) GetAll(ctx context.Context, userId int, params GetTodosRequest) (*models.PaginatedResponse[Todo], *models.AppError) {
 	query := `
 		SELECT
 			COUNT(id)
@@ -79,7 +80,7 @@ func (r *Repository) GetAll(ctx context.Context, userId int, params GetTodosRequ
 	}
 	err := r.db.QueryRow(ctx, query, userId).Scan(&paginatedResult.TotalRecords)
 	if err != nil {
-		return nil, errors.New(errorCodes.INTERNAL)
+		return nil, utils.CreateError(http.StatusInternalServerError, INTERNAL_ERROR, err.Error())
 	}
 
 	offset := (params.PageNumber - 1) * params.PageSize
@@ -100,7 +101,7 @@ func (r *Repository) GetAll(ctx context.Context, userId int, params GetTodosRequ
 `
 	rows, err := r.db.Query(ctx, query, userId, offset, params.PageSize)
 	if err != nil {
-		return nil, errors.New(errorCodes.INTERNAL)
+		return nil, utils.CreateError(http.StatusInternalServerError, INTERNAL_ERROR, err.Error())
 	}
 	defer rows.Close()
 
@@ -112,13 +113,13 @@ func (r *Repository) GetAll(ctx context.Context, userId int, params GetTodosRequ
 	})
 
 	if err != nil {
-		return nil, errors.New(errorCodes.INTERNAL)
+		return nil, utils.CreateError(http.StatusInternalServerError, INTERNAL_ERROR, err.Error())
 	}
 	paginatedResult.Content = todos
 	return paginatedResult, nil
 }
 
-func (r *Repository) Delete(ctx context.Context, todoId int) error {
+func (r *Repository) Delete(ctx context.Context, todoId int) *models.AppError {
 	query := `
 		DELETE FROM todos
 		WHERE
@@ -127,11 +128,11 @@ func (r *Repository) Delete(ctx context.Context, todoId int) error {
 	result, err := r.db.Exec(ctx, query, todoId)
 
 	if err != nil {
-		return errors.New(errorCodes.INTERNAL)
+		return utils.CreateError(http.StatusInternalServerError, INTERNAL_ERROR, err.Error())
 	}
 
 	if result.RowsAffected() == 0 {
-		return errors.New(errorCodes.NOT_FOUND)
+		return utils.CreateError(http.StatusNotFound, NOT_FOUND, err.Error())
 	}
 	return nil
 }

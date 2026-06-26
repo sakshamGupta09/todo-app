@@ -14,7 +14,7 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) CreateTodo(ctx context.Context, req CreateTodoRequest) (*Todo, error) {
+func (s *Service) CreateTodo(ctx context.Context, req CreateTodoRequest) (*Todo, *models.AppError) {
 	todoModel := &Todo{
 		Title:       req.Title,
 		Description: req.Description,
@@ -28,17 +28,17 @@ func (s *Service) CreateTodo(ctx context.Context, req CreateTodoRequest) (*Todo,
 	return result, err
 }
 
-func (s *Service) GetTodos(ctx context.Context, userId int, req GetTodosRequest) (*models.PaginatedResponse[Todo], error) {
+func (s *Service) GetTodos(ctx context.Context, userId int, req GetTodosRequest) (*models.PaginatedResponse[Todo], *models.AppError) {
 	res, err := s.repo.GetAll(ctx, userId, req)
 	return res, err
 }
 
-func (s *Service) GetTodoDetails(ctx context.Context, todoId int) (*Todo, error) {
+func (s *Service) GetTodoDetails(ctx context.Context, todoId int) (*Todo, *models.AppError) {
 	res, err := s.repo.GetById(ctx, todoId)
 	return res, err
 }
 
-func (s *Service) DeleteTodo(ctx context.Context, todoId int) error {
+func (s *Service) DeleteTodo(ctx context.Context, todoId int) *models.AppError {
 	err := s.repo.Delete(ctx, todoId)
 	return err
 }
