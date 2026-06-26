@@ -17,3 +17,8 @@ type TodoResponse struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 	UserId      int       `json:"userId"`
 }
+
+type GetTodosRequest struct {
+	PageNumber int
+	PageSize   int
+}

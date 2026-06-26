@@ -4,20 +4,11 @@ import (
 	"context"
 	"errors"
 	"todo-app/internal/errorCodes"
+	"todo-app/internal/models"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-type PaginatedResult struct {
-	TotalRecords int
-	Content      any
-}
-
-type PaginationParams struct {
-	PageSize   int
-	PageNumber int
-}
 
 type Repository struct {
 	db *pgxpool.Pool
@@ -72,7 +63,7 @@ func (r *Repository) GetById(ctx context.Context, id int) (*Todo, error) {
 	return &todo, nil
 }
 
-func (r *Repository) GetAll(ctx context.Context, userId int, params PaginationParams) (*PaginatedResult, error) {
+func (r *Repository) GetAll(ctx context.Context, userId int, params GetTodosRequest) (*models.PaginatedResponse[Todo], error) {
 	query := `
 		SELECT
 			COUNT(id)
@@ -80,9 +71,11 @@ func (r *Repository) GetAll(ctx context.Context, userId int, params PaginationPa
 		WHERE
 			user_id = $1
 	`
-	paginatedResult := &PaginatedResult{
+	paginatedResult := &models.PaginatedResponse[Todo]{
 		TotalRecords: 0,
 		Content:      make([]Todo, 0),
+		PageSize:     params.PageSize,
+		PageNumber:   params.PageNumber,
 	}
 	err := r.db.QueryRow(ctx, query, userId).Scan(&paginatedResult.TotalRecords)
 	if err != nil {

@@ -1,4 +1,4 @@
-package response
+package models
 
 type APIErrorDetails struct {
 	Code    string `json:"code"`

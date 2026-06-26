@@ -3,6 +3,7 @@ package todos
 import (
 	"context"
 	"time"
+	"todo-app/internal/models"
 )
 
 type Service struct {
@@ -24,8 +25,20 @@ func (s *Service) CreateTodo(ctx context.Context, req CreateTodoRequest) (*Todo,
 	}
 	result, err := s.repo.Create(ctx, todoModel)
 
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
+	return result, err
+}
+
+func (s *Service) GetTodos(ctx context.Context, userId int, req GetTodosRequest) (*models.PaginatedResponse[Todo], error) {
+	res, err := s.repo.GetAll(ctx, userId, req)
+	return res, err
+}
+
+func (s *Service) GetTodoDetails(ctx context.Context, todoId int) (*Todo, error) {
+	res, err := s.repo.GetById(ctx, todoId)
+	return res, err
+}
+
+func (s *Service) DeleteTodo(ctx context.Context, todoId int) error {
+	err := s.repo.Delete(ctx, todoId)
+	return err
 }
