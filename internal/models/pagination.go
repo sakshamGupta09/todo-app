@@ -6,3 +6,8 @@ type PaginatedResponse[T any] struct {
 	PageSize     int `json:"pageSize"`
 	PageNumber   int `json:"pageNumber"`
 }
+
+type PaginationParams struct {
+	PageSize   int
+	PageNumber int
+}

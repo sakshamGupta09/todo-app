@@ -9,3 +9,10 @@ func CreateError(statusCode int, message string, cause string) *models.AppError 
 		Cause:      cause,
 	}
 }
+
+func CreateAPIError(e *models.AppError) *models.APIError {
+	return &models.APIError{
+		Message:    e.Message,
+		StatusCode: e.StatusCode,
+	}
+}
