@@ -21,7 +21,7 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 
 func (r *Repository) Create(ctx context.Context, todo *Todo) (*Todo, *models.AppError) {
 	query := `
-		INSERT INTO todos (title, description, completed, createdAt, updatedAt)
+		INSERT INTO todos (title, description, completed, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING *
 	`
@@ -42,9 +42,8 @@ func (r *Repository) GetById(ctx context.Context, id int) (*Todo, *models.AppErr
 			title,
 			description,
 			completed,
-			createdAt,
-			updatedAt,
-			userId
+			created_at,
+			updated_at
 		FROM todos
 		WHERE
 			id = $1
@@ -52,7 +51,7 @@ func (r *Repository) GetById(ctx context.Context, id int) (*Todo, *models.AppErr
 
 	var todo Todo
 
-	err := r.db.QueryRow(ctx, query, id).Scan(&todo.Id, &todo.Title, &todo.Description, &todo.Completed, &todo.CreatedAt, &todo.UpdatedAt, &todo.UserId)
+	err := r.db.QueryRow(ctx, query, id).Scan(&todo.Id, &todo.Title, &todo.Description, &todo.Completed, &todo.CreatedAt, &todo.UpdatedAt)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -64,13 +63,11 @@ func (r *Repository) GetById(ctx context.Context, id int) (*Todo, *models.AppErr
 	return &todo, nil
 }
 
-func (r *Repository) GetAll(ctx context.Context, userId int, params GetTodosRequest) (*models.PaginatedResponse[Todo], *models.AppError) {
+func (r *Repository) GetAll(ctx context.Context, params GetTodosRequest) (*models.PaginatedResponse[Todo], *models.AppError) {
 	query := `
 		SELECT
 			COUNT(id)
 		FROM todos
-		WHERE
-			user_id = $1
 	`
 	paginatedResult := &models.PaginatedResponse[Todo]{
 		TotalRecords: 0,
@@ -78,7 +75,7 @@ func (r *Repository) GetAll(ctx context.Context, userId int, params GetTodosRequ
 		PageSize:     params.PageSize,
 		PageNumber:   params.PageNumber,
 	}
-	err := r.db.QueryRow(ctx, query, userId).Scan(&paginatedResult.TotalRecords)
+	err := r.db.QueryRow(ctx, query).Scan(&paginatedResult.TotalRecords)
 	if err != nil {
 		return nil, utils.CreateError(http.StatusInternalServerError, INTERNAL_ERROR, err.Error())
 	}
@@ -90,16 +87,13 @@ func (r *Repository) GetAll(ctx context.Context, userId int, params GetTodosRequ
 		title,
 		description,
 		completed,
-		createdAt,
-		updatedAt,
-		userId
+		created_at,
+		updated_at
 	FROM todos
-	WHERE
-		userId = $1
-	OFFSET $2
-	LIMIT $3
+	OFFSET $1
+	LIMIT $2
 `
-	rows, err := r.db.Query(ctx, query, userId, offset, params.PageSize)
+	rows, err := r.db.Query(ctx, query, offset, params.PageSize)
 	if err != nil {
 		return nil, utils.CreateError(http.StatusInternalServerError, INTERNAL_ERROR, err.Error())
 	}
@@ -108,7 +102,7 @@ func (r *Repository) GetAll(ctx context.Context, userId int, params GetTodosRequ
 	todos, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Todo, error) {
 		var todo Todo
 
-		err = row.Scan(&todo.Id, &todo.Title, &todo.Description, &todo.Completed, &todo.CreatedAt, &todo.UpdatedAt, &todo.UserId)
+		err = row.Scan(&todo.Id, &todo.Title, &todo.Description, &todo.Completed, &todo.CreatedAt, &todo.UpdatedAt)
 		return todo, err
 	})
 

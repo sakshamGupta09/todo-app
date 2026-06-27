@@ -34,12 +34,7 @@ func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetTodos(w http.ResponseWriter, r *http.Request) {
 	var req GetTodosRequest
-	userId, err := utils.ToInt(r, "id")
 
-	if err != nil {
-		http.Error(w, ID_MISSING, http.StatusBadRequest)
-		return
-	}
 	if err := h.app.Decoder.Decode(&req, r.URL.Query()); err != nil {
 		http.Error(w, VALIDATION, http.StatusBadRequest)
 		return
@@ -50,7 +45,7 @@ func (h *Handler) GetTodos(w http.ResponseWriter, r *http.Request) {
 	if req.PageSize == 0 {
 		req.PageSize = 10
 	}
-	res, error := h.service.GetTodos(r.Context(), userId, req)
+	res, error := h.service.GetTodos(r.Context(), req)
 
 	if error != nil {
 		e := utils.CreateAPIError(error)

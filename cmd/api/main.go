@@ -31,7 +31,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Could not connect to the database", err)
 	}
-	fmt.Println("Connected to DB ....", db)
+	fmt.Println("Connected to DB ....")
 
 	decoder := schema.NewDecoder()
 	decoder.IgnoreUnknownKeys(true)
@@ -45,5 +45,5 @@ func main() {
 
 	todos.Setup(mux, application)
 
-	log.Fatal(http.ListenAndServe("80", mux))
+	log.Fatal(http.ListenAndServe(":80", mux))
 }

@@ -27,8 +27,8 @@ func (s *Service) CreateTodo(ctx context.Context, req CreateTodoRequest) (*Todo,
 	return result, err
 }
 
-func (s *Service) GetTodos(ctx context.Context, userId int, req GetTodosRequest) (*models.PaginatedResponse[Todo], *models.AppError) {
-	res, err := s.repo.GetAll(ctx, userId, req)
+func (s *Service) GetTodos(ctx context.Context, req GetTodosRequest) (*models.PaginatedResponse[Todo], *models.AppError) {
+	res, err := s.repo.GetAll(ctx, req)
 	return res, err
 }
 
