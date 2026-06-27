@@ -21,7 +21,6 @@ func (s *Service) CreateTodo(ctx context.Context, req CreateTodoRequest) (*Todo,
 		Completed:   false,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
-		UserId:      req.UserId,
 	}
 	result, err := s.repo.Create(ctx, todoModel)
 

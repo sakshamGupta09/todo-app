@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
 	"todo-app/internal/app"
 	"todo-app/internal/database"
+	"todo-app/internal/todos"
 
 	"github.com/gorilla/schema"
 	"github.com/joho/godotenv"
@@ -39,4 +41,9 @@ func main() {
 		Decoder: decoder,
 	}
 
+	mux := http.NewServeMux()
+
+	todos.Setup(mux, application)
+
+	log.Fatal(http.ListenAndServe("80", mux))
 }

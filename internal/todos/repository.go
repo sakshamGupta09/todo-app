@@ -21,13 +21,13 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 
 func (r *Repository) Create(ctx context.Context, todo *Todo) (*Todo, *models.AppError) {
 	query := `
-		INSERT INTO todos (title, description, completed, createdAt, updatedAt, userId)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO todos (title, description, completed, createdAt, updatedAt)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING *
 	`
 	var insertedTodo Todo
 
-	err := r.db.QueryRow(ctx, query, todo.Title, todo.Description, todo.Completed, todo.CreatedAt, todo.UpdatedAt, todo.UserId).Scan(&insertedTodo.Id, &insertedTodo.Title, &insertedTodo.Description, &insertedTodo.Completed, &insertedTodo.CreatedAt, &insertedTodo.UpdatedAt, &insertedTodo.UserId)
+	err := r.db.QueryRow(ctx, query, todo.Title, todo.Description, todo.Completed, todo.CreatedAt, todo.UpdatedAt).Scan(&insertedTodo.Id, &insertedTodo.Title, &insertedTodo.Description, &insertedTodo.Completed, &insertedTodo.CreatedAt, &insertedTodo.UpdatedAt)
 
 	if err != nil {
 		return nil, utils.CreateError(http.StatusInternalServerError, INTERNAL_ERROR, err.Error())
@@ -132,7 +132,7 @@ func (r *Repository) Delete(ctx context.Context, todoId int) *models.AppError {
 	}
 
 	if result.RowsAffected() == 0 {
-		return utils.CreateError(http.StatusNotFound, NOT_FOUND, err.Error())
+		return utils.CreateError(http.StatusNotFound, NOT_FOUND, NOT_FOUND)
 	}
 	return nil
 }

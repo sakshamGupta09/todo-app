@@ -3,9 +3,8 @@ package todos
 import "time"
 
 type CreateTodoRequest struct {
-	Title       string `json:"title" validate:"required,min=3,max=50"`
-	Description string `json:"description" validate:"required,min=3,max=100"`
-	UserId      int    `json:"userId" validate:"required"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
 }
 
 type TodoResponse struct {
@@ -15,7 +14,6 @@ type TodoResponse struct {
 	Completed   bool      `json:"completed"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
-	UserId      int       `json:"userId"`
 }
 
 type GetTodosRequest struct {
